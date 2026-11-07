@@ -1,0 +1,35 @@
+name: Build 2far melodies VST3
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Probar el nucleo de afinacion (detector + cambio de tono)
+        continue-on-error: true
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cl /nologo /std:c++17 /O2 /EHsc tests\test_pitch.cpp /Fe:test_pitch.exe
+          test_pitch.exe
+
+      - name: Configure (CMake descarga JUCE)
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build Release
+        run: cmake --build build --config Release --parallel
+
+      - name: Subir el VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2far-melodies-vst3
+          path: build/Melodies_artefacts/Release/VST3/
+          if-no-files-found: error
